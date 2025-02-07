@@ -1,0 +1,181 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Invoice #{{ invoice.phone }}</title>
+
+    <!-- ✅ Google Font for professional styling -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #fff;
+            margin: 0;
+            padding: 0;
+        }
+        .invoice-box {
+            max-width: 800px;
+            margin: auto;
+            padding: 30px;
+            background: #fff;
+            border-radius: 10px;
+            
+            font-size: 16px;
+            line-height: 24px;
+            color: #333;
+        }
+        .invoice-box table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+        }
+        .invoice-box table td {
+            padding: 8px;
+            vertical-align: top;
+            text-align: center;
+        }
+        .invoice-box table tr.heading td {
+            background: #222;
+            color: #fff;
+            font-weight: bold;
+        }
+        .invoice-box table tr.item td {
+            border-bottom: 1px solid #ddd;
+        }
+        .invoice-box table tr.total td {
+            border-top: 2px solid #222;
+            font-weight: bold;
+        }
+        .invoice-box table tr.signature td {
+            padding-top: 40px;
+        }
+        .signature-box {
+            border-top: 1px solid #000;
+            width: 200px;
+            text-align: center;
+            margin-top: 30px;
+            font-size: 14px;
+            font-style: italic;
+            float: right;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            text-align: center;
+            color: #777;
+        }
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .logo-row{
+        text-align: center;
+        }
+        .logo {
+        width: 250px;
+        height: 150px;
+        text-align: center;
+        }
+
+
+
+    </style>
+</head>
+
+<body>
+    <div class="invoice-box">
+        <!-- Invoice Header -->
+        <div class="header-container">
+            <div class ="row">
+            <div class="logo-row" >
+                
+<!--<img src="/static/images/manda-logo.png" alt="Company Logo" style="width: 50px; height: auto;">-->
+<img src="https://i.postimg.cc/vBFJDbGy/shoplogo1.png" style="width: 120px" />
+            </div>
+            <div style="text-align: right;">
+                <h2 style="margin: 0;">Invoice #{{ invoice.id }}</h2>
+                Created: {{ invoice.datein|date:"d M Y" }}<br />
+            </div>
+        </div>
+
+        <!-- Seller & Buyer Information -->
+        <table>
+            <tr class="information">
+                <td colspan="2">
+                    <table>
+                        <tr>
+                            <td>
+                                <strong>Seller (Your Company)</strong><br />
+                                {{ p_settings.firma }}<br />
+                                {{ p_settings.faddress }}<br />
+                                {{ p_settings.cif }}<br />
+                                Phone: {{ p_settings.fphone }}
+                            </td>
+                            <td style="text-align: right;">
+                                <strong>Customer</strong><br />
+                                {{ invoice.customer }}<br />
+                                {{ invoice.address }}<br />
+                                NIF: {{ invoice.nif }}<br />
+                                Phone: {{ invoice.phone }}
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Invoice Items -->
+        <table>
+            <tr class="heading">
+                <td>Item</td>
+                <td>IMI</td>
+                <td>Quantity</td>
+                <td>Price</td>
+                <td>Total</td>
+            </tr>
+
+            {% for product in products %}
+            <tr class="item">
+                <td>{{ product.name }}</td>
+                <td>{{ product.imi }}</td>
+                <td>{{ product.quantity }}</td>
+                <td>{{ product.price }} €</td>
+                <td>{{ product.total }} €</td>
+            </tr>
+            {% endfor %}
+
+            <!-- Invoice Total -->
+            <tr class="total">
+                <td colspan="4" style="text-align: right;"><strong>Grand Total:</strong></td>
+                <td style="text-align: right;"><strong>{{ invoiceTotal }} €</strong></td>
+            </tr>
+        </table>
+
+        <!-- Signature Section -->
+        <table width="100%">
+            <tr class="signature">
+                <td style="text-align: left;">
+                    <div class="signature-box" style="float: left;">Authorized Signature</div>
+                </td>
+                <td style="text-align: right;">
+                    <div class="signature-box" style="float: right;">Customer Signature</div>
+                </td>
+            </tr>
+        </table>
+<p></p>
+        <!-- Notes & Terms -->
+        <div class="footer">
+            <p><strong>Terms & Conditions:</strong> Payment is due within 7 days. Late payments may incur additional fees.</p>
+            <p><strong>Thank You!</strong> We appreciate your business.</p>
+<img src="https://i.postimg.cc/3rDkPZcD/manda-logo.png" style="width: 80px" />
+
+        </div>
+    </div>
+</body>
+</html>

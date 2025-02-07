@@ -1,0 +1,48 @@
+/* Flex container with space between items */
+.flex-container {
+  display: flex; /* Enables Flexbox on the container */
+  justify-content: space-between; /* Distributes items evenly with space between them */
+  align-items: center; /* Aligns items vertically at the center */
+}
+
+/* Owner list container with wrapping and gap between items */
+.owner-list {
+  display: flex;
+  flex-wrap: wrap; /* Allow items to wrap when needed */
+  gap: 20px; /* Space between items */
+  padding: 20px; /* Padding around the list */
+}
+
+/* Individual owner item */
+.owner-item {
+  border: 1px solid #ccc; /* Light border around each item */
+  padding: 15px; /* Padding inside each item */
+  width: 400px; /* Fixed width for each item */
+  border-radius: 8px; /* Rounded corners */
+}
+
+/* Owner item image styles (circle image) */
+.owner-item img {
+  width: 50px; /* Set width */
+  height: 50px; /* Set height */
+  border-radius: 50%; /* Circle shape */
+}
+
+/* Details section inside the owner item */
+.owner-item .details {
+  margin-top: 10px; /* Space above the details */
+}
+
+/* Styling individual spans inside details */
+.owner-item .details span {
+  display: block; /* Each span on a new line */
+  margin-bottom: 5px; /* Space below each span */
+}
+
+/* Link inside owner item */
+.owner-item a {
+  display: inline-block; /* Display as inline-block */
+  margin-top: 10px; /* Space above the link */
+  text-decoration: none; /* Remove underline */
+  color: #007BFF; /* Blue color for the link */
+}

@@ -1,0 +1,57 @@
+{% extends 'inventory/base.html' %}
+
+{% block content %}
+
+
+
+	<div class="row">
+		<div class="col-md-10 col-12 mx-auto mt-5">
+			<div class="d-flex justify-content-end">
+				<a href="{% url 'invoiceadd' %}" class="btn btn-primary">+</a>
+			</div>
+<form method="get" action="{% url 'dashboard5' %}">
+		<input type="text" name="phone" placeholder="Search by phone number" value="{{ request.GET.phone }}">
+        <button type="submit">Search</button>
+</form>
+
+			<table class="table table-hover table-striped">
+				<thead>
+					<tr>
+						<th scope="col">Date</th>
+						<th scope="col">Name</th>
+						<th scope="col">NIE</th>
+						<th scope="col">Phone</th>
+						<th scope="col">Address</th>
+						<th scope="col"></th>
+						<th scope="col"></th>
+					</tr>
+				</thead>
+				<tbody>
+					{% if invoices|length == 0 %}
+					<tr>
+						<th scope="row">-</th>
+						<td>-</td>
+						<td>-</td>
+						<td>-</td>
+						<td>-</td>
+						<td></td>
+					</tr>
+					{% endif %}
+
+					{% for iteminv in invoices %}
+					<tr>
+						<th scope="row">{{ iteminv.datein }}</th>
+						<td>{{ iteminv.customer }}</td>
+						<td>{{ iteminv.nif }}</td>
+						<td>{{ iteminv.phone }}</td>
+						<td>{{ iteminv.address }}</td>						
+			<td><a href="{% url 'invoice_detail' iteminv.id %}" target="_blank" class="btn btn-primary">View</a></td>
+
+						<td><a href="{% url 'delete-inv' iteminv.id %}" class="btn btn-secondary">Delete</a></td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</div>
+{% endblock content %}

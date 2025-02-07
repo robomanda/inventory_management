@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1, h2 {
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        .total {
+            font-weight: bold;
+        }
+
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sales Report</h1>
+        
+<p>From: {{ start_date }} to {{ end_date }}</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Invoice ID</th>
+                    <th>Customer Name</th>
+                    <th>Date</th>
+                    <th>Total Amount (€)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sale in sales %}
+                <tr>
+                    <td>{{ sale.id }}</td>
+                    <td>{{ sale.customer.cname }}</td>
+                    <td>{{ sale.datein }}</td>
+                    <td>{{ sale.total_amount|default:0 }} €</td> <!-- ✅ Fix: Total per invoice -->
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-center">No sales found for this period.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- ✅ Fix: Correct Grand Total Display -->
+        <p class="total" style="text-align: right; margin-top: 10px; font-size: 18px;">
+            <strong>Grand Total: {{ grand_total|default:0 }} €</strong>
+        </p>
+
+        <div class="footer">
+            <p>Generated on {{ current_date }}</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{% extends 'inventory/base.html' %}
+
+{% block content %}
+	<html>	
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner Data</title>
+    <h5> Company information </h5>
+    </head>
+        
+        {% for owner in owners %}
+            <h3>{{ owner.firma }}</h3>
+                <p><span><strong>CIF:</strong> {{ owner.cif }}</span></p>
+                <p><span><strong>Phone:</strong> {{ owner.fphone }}</span></p>
+                <p><span><strong>Whatsapp:</strong> {{ owner.whtsapp }}</span></p>
+                <p><span><strong>Domain:</strong> {{ owner.domainn }}</span></p>
+               <p><span><strong>Address:</strong> {{ owner.faddress }}</span></p>
+              <a href="{% url 'edit-owner' owner.id %}"class="btn btn-outline-secondary">Edit</a>
+        {% endfor %}
+     
+</div>
+</html>
+
+{% endblock content %}

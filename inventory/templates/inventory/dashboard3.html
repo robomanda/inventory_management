@@ -1,0 +1,75 @@
+{% extends 'inventory/base.html' %}
+
+{% block content %}
+
+<!-- Banner Section -->
+
+<!-- <div style="text-align: center; padding: 20px; background-color: #f8f9fa; border-bottom: 1px solid #ddd;"> >
+ <!   <img src="/static/images/banner.jpg" alt="Inventory Banner" style="max-width: 100%; height: auto;"> >
+<! </div> -->
+
+
+
+	{% if messages %}
+		<div class="row mt-3">
+			{% for message in messages %}
+				{% if message.tags == 'error' %}
+					<div class="col-md-10 col-12 mx-auto alert alert-danger">
+						{{ message }}
+					</div>
+				{% else %}
+					<div class="col-md-10 col-12 mx-auto alert alert-success">
+						{{ message }}
+					</div>
+				{% endif %}
+			{% endfor %}
+		</div>
+	{% endif %}
+	<div class="row">
+		<div class="col-md-10 col-12 mx-auto mt-5">
+			<div class="d-flex justify-content-end">
+				<a href="{% url 'supplieradd' %}" class="btn btn-primary">+</a>
+			</div>
+<form method="get" action="{% url 'dashboard3' %}">
+		<input type="text" name="sphone" placeholder="Search by phone number" value="{{ request.GET.sphone }}">
+        <button type="submit">Search</button>
+</form>
+
+			<table class="table table-hover table-striped">
+				<thead>
+					<tr>
+						<th scope="col">ID</th>
+						<th scope="col">Name</th>
+						<th scope="col">Phone</th>
+						<th scope="col">Address</th>
+						<th scope="col"></th>
+						<th scope="col"></th>
+					</tr>
+				</thead>
+				<tbody>
+					{% if supps|length == 0 %}
+					<tr>
+						<th scope="row">-</th>
+						<td>-</td>
+						<td>-</td>
+						<td>-</td>
+						<td>-</td>
+						<td></td>
+					</tr>
+					{% endif %}
+
+					{% for itemsup in supps %}
+					<tr>
+						<th scope="row">{{ itemsup.id }}</th>
+						<td>{{ itemsup.sname }}</td>
+						<td>{{ itemsup.sphone }}</td>
+						<td>{{ itemsup.saddress }}</td>						
+						<td><a href="{% url 'supp-edit' itemsup.id %}" class="btn btn-outline-secondary">Edit</a></td>
+						<td><a href="{% url 'supp-delete' itemsup.id %}" class="btn btn-secondary">Delete</a></td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</div>
+{% endblock content %}

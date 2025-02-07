@@ -1,0 +1,54 @@
+{% extends 'inventory/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+
+<div class="container mt-4 text-center">
+    <h2>Sales Report</h2>
+
+    <form method="GET" class="d-flex justify-content-center gap-2 mb-3">
+        <label class="me-2">Start Date:</label>
+        <input type="date" name="start_date" value="{{ start_date }}" class="form-control w-auto">
+        <label class="ms-3 me-2">End Date:</label>
+        <input type="date" name="end_date" value="{{ end_date }}" class="form-control w-auto">
+        <button type="submit" class="btn btn-primary ms-3">Filter</button>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Invoice ID</th>
+                    <th>Customer</th>
+                    <th>Date</th>
+                    <th>Total Amount (€)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sale in sales %}
+                <tr>
+                    <td>{{ sale.id }}</td>
+                    <td>{{ sale.customer.cname }}</td>
+                    <td>{{ sale.datein }}</td>
+                    <td>{{ sale.total_amount|default:0 }} €</td> <!-- ✅ Display total per invoice -->
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-center">No sales found for this period.</td></tr>
+                {% endfor %}
+                
+                <tr class="table-warning fw-bold">
+                    <td colspan="3" class="text-end">Grand Total:</td>
+                    <td>{{ grand_total|default:0 }} €</td> <!-- ✅ Display grand total -->
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <form method="GET" action="{% url 'export_sales_report_pdf' %}">
+        <input type="hidden" name="start_date" value="{{ start_date }}">
+        <input type="hidden" name="end_date" value="{{ end_date }}">
+        <button type="submit" class="btn btn-danger">Export as PDF</button>
+    </form>
+</div>
+
+{% endblock %}

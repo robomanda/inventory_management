@@ -1,0 +1,26 @@
+{% extends 'inventory/base.html' %}
+
+{% block content %}
+<div>
+	<div class="row">
+		<div class="col-sm-11 col-md-6 mx-auto mt-5 px-3">
+			<h1 class="fw-light">Track and Manage </h1>
+			<p class="fw-light">Keep track of your inventory and receive quantity alerts for low inventory</p>
+
+
+
+			<div>
+				<a href="{% url 'dashboard' %}" class="btn btn-primary">Products</a>
+				<a href="{% url 'dashboard2' %}" class="btn btn-primary">Customers</a>
+				<a href="{% url 'dashboard3' %}" class="btn btn-primary">Suppliers</a>
+				<a href="{% url 'dashboard5' %}" class="btn btn-primary">Invoice</a>
+				<a href="{% url 'sales_report' %}" class="btn btn-primary">Sale-reports</a>
+				<a href="{% url 'dashboard4' %}" class="btn btn-primary">Company</a>
+			</div>
+
+
+			
+		</div>
+	</div>
+</div>
+{% endblock content %}
