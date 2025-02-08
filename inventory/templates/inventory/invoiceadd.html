@@ -4,6 +4,7 @@
 {% block content %}
 <!DOCTYPE html>
 
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,12 +12,26 @@
 </head>
 
 <div class="container mt-5">
-    <h5 class="text-center">Add Invoice</h5>
 
+
+    <div class="row justify-content-center">
+    <div class="col-md-5">
+        
+
+      <!-- Your form goes here -->
+    
+<h5 class="text-center">Add Invoice - <span id="currentDate"></span></h5>
+
+<script>
+  const today = new Date();
+  const formattedDate = today.toLocaleDateString("en-GB"); // European format (DD/MM/YYYY)
+  document.getElementById("currentDate").textContent = formattedDate;
+</script>
     <!-- Invoice Form -->
     <form id="invoiceForm">
         {% csrf_token %}
-        
+
+
         <!-- Customer Selection -->
        
 </div>
@@ -25,6 +40,7 @@
 <div class="card p-3">
             <h5>Customer</h5>
             <table class="table table-bordered" id="customerTable">
+
                 <thead class="table-dark">
                     <tr>
                         <th>Phone</th>
@@ -236,7 +252,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // **AJAX Invoice Save**
+    
      // **AJAX Invoice Save**
     saveInvoiceBtn.addEventListener("click", function() {
         let customer = document.querySelector(".phone").value;  // Get the customer phone
