@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 from django.conf.urls.static import static
-from .views import Index, SignUpView, CustomLogoutView, Dashboard, AddItem, EditItem, DeleteItem, CustomerAd, CustomLogoutView, Dashboard2, DeleteItemCust, EditItemCust, Dashboard3, SupplierAd, DeleteItemSup, EditItemSup, Dashboard4, EditOwner, OwnerAd, Dashboard5, InvoiceAd, EditItemInv, DeleteItemInv, save_invoice, viewPDFInvoice, InvoiceDetailView, export_sales_report_pdf, sales_report
+from .views import Index, SignUpView, Dashboard, AddItem, EditItem, DeleteItem, CustomerAd, custom_logout, Dashboard2, DeleteItemCust, EditItemCust, Dashboard3, SupplierAd, DeleteItemSup, EditItemSup, Dashboard4, EditOwner, OwnerAd, Dashboard5, InvoiceAd, EditItemInv, DeleteItemInv, save_invoice, viewPDFInvoice, InvoiceDetailView, export_sales_report_pdf, sales_report, export_customers_pdf, export_products_pdf, export_suppliers_pdf
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.views import LogoutView
 
@@ -28,12 +28,13 @@ urlpatterns = [
     path('edit-owner/<int:pk>/', EditOwner.as_view(), name='edit-owner'),
     path('signup/', SignUpView.as_view(), name='signup'),
     path('login/', auth_views.LoginView.as_view(template_name='inventory/login.html'), name='login'),
-    #path('logout/', auth_views.CustomLogoutView.as_view(template_name='inventory/logout.html'), name='logout'),
-    path('logout/', CustomLogoutView.as_view(), name='logout'),
+    path('logout/', custom_logout, name='logout'),  # Custom logout view
     path("save-invoice/", save_invoice, name="save_invoice"),
     path('invoice/<int:invoice_id>/pdf/', viewPDFInvoice, name='invoice_pdf'),
     path('invoice/<int:invoice_id>/', InvoiceDetailView, name='invoice_detail'),
     path('sales-report/', sales_report, name='sales_report'),
     path('sales-report/pdf/', export_sales_report_pdf, name='export_sales_report_pdf'),
+    path('export-customers-pdf/', export_customers_pdf, name='export_customers_pdf'),
+    path('export-products-pdf/', export_products_pdf, name='export_products_pdf'),
+    path('export-suppliers-pdf/', export_suppliers_pdf, name='export_suppliers_pdf'),
 ]
-

@@ -78,6 +78,14 @@
 					{% endfor %}
 				</tbody>
 			</table>
+
+ <form method="GET" action="{% url 'export_products_pdf' %}">
+        
+        <button type="submit" class="btn btn-danger">Export as PDF</button>
+    </form>
+
+
+
 		</div>
 	</div>
 {% endblock content %}

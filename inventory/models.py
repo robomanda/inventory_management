@@ -11,9 +11,8 @@ class InventoryItem(models.Model):
 	quantity = models.PositiveIntegerField()
 	price = models.DecimalField(max_digits=10, decimal_places=2)
 	supply = models.ForeignKey('SupplierData', max_length=15, on_delete=models.SET_NULL, blank=True, null=True)
-	#price = models.BinaryField(max_digits=5, decimal_places=2, default=0, default_currency='Euro')
 	category = models.ForeignKey('Category', max_length=15, on_delete=models.SET_NULL, blank=True, null=True)
-	#datecrea = models.DateTimeField(auto_now_add=True)
+	datecrea = models.DateTimeField(auto_now_add=True)
 	user = models.ForeignKey(User, on_delete=models.CASCADE)
 
 	def __str__(self):

@@ -1,4 +1,5 @@
 
+from reportlab.lib import colors
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse
 from django.template.loader import get_template
@@ -19,6 +20,7 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 from urllib.parse import unquote 
 from django.http import JsonResponse
+import os
 import json
 import pdfkit
 from django.views.decorators.csrf import csrf_exempt
@@ -28,6 +30,10 @@ from django.conf import settings
 from django.utils.dateparse import parse_date
 from django.db.models import Sum
 from django.db import transaction
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+from reportlab.lib.styles import getSampleStyleSheet
+
 
 
 date_formats = ["%Y-%m-%d", "%b. %d, %Y"]  # Example: '2025-02-08' and 'Feb. 8, 2025'
@@ -136,9 +142,10 @@ class CustomerAd(LoginRequiredMixin, CreateView):
 		form.instance.user = self.request.user
 		return super().form_valid(form)
 
-class CustomLogoutView(LogoutView):
-    def get(self, request, *args, **kwargs):
-        return self.post(request, *args, **kwargs)
+def custom_logout(request):
+    logout(request)  # Logs out user
+    return redirect('login')  # Redirect to login page
+
 
 class Dashboard2(LoginRequiredMixin, View):
     def get(self, request):
@@ -511,3 +518,149 @@ def export_sales_report_pdf(request):
     response = HttpResponse(pdf, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="sales_report_{formatted_start_date}_to_{formatted_end_date}.pdf"'
     return response
+
+
+
+def export_customers_pdf(request):
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="customer_list.pdf"'
+
+    doc = SimpleDocTemplate(response, pagesize=landscape(letter))
+    elements = []
+
+    # ✅ Correctly get the absolute path of the logo
+    logo_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'manda-logo.png')
+
+    # ✅ Add logo if the file exists
+    if os.path.exists(logo_path):
+        logo = Image(logo_path, width=120, height=60)  # Adjust width/height as needed
+        elements.append(logo)
+
+    # ✅ Add title "Customer List"
+    styles = getSampleStyleSheet()
+    title = Paragraph("<b>Customer List</b>", styles['Title'])
+    elements.append(title)
+    elements.append(Spacer(1, 12))  # Add spacing below title
+
+    # ✅ Define table header
+    data = [["ID", "Name", "NIE", "Phone", "Address", "Date Created"]]
+    customers = CustomerData.objects.all().values_list("id", "cname", "cnie", "cphone", "caddress", "datec")
+
+    for customer in customers:
+        data.append(list(customer))
+
+    # ✅ Create table with styling
+    table = Table(data)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+
+    elements.append(table)
+    doc.build(elements)
+
+    return response
+
+def export_products_pdf(request):
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="products_list.pdf"'
+
+    doc = SimpleDocTemplate(response, pagesize=landscape(letter))
+    elements = []
+
+    # ✅ Correctly get the absolute path of the logo
+    logo_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'manda-logo.png')
+
+    # ✅ Add logo if the file exists
+    if os.path.exists(logo_path):
+        logo = Image(logo_path, width=120, height=60)  # Adjust width/height as needed
+        elements.append(logo)
+
+    # ✅ Add title "Product List"
+    styles = getSampleStyleSheet()
+    title = Paragraph("<b>Product List</b>", styles['Title'])
+    elements.append(title)
+    elements.append(Spacer(1, 12))  # Add spacing below title
+
+    # ✅ Define table header
+    data = [["IMI", "Name", "Quantity", "Price", "Supply", "Supplier phone", "Supply-date"]]
+    
+    # Fetch products with supplier data
+    products = InventoryItem.objects.all().select_related('supply').values_list(
+        "imi", "name", "quantity", "price", "supply__sname", "supply__sphone", "datecrea"
+    )
+
+    for product in products:
+        # Add data for each product, including supplier's name and phone
+        data.append(list(product))
+
+    # ✅ Create table with styling
+    table = Table(data)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+
+    elements.append(table)
+    doc.build(elements)
+
+    return response
+
+def export_suppliers_pdf(request):
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="supplier_list.pdf"'
+
+    doc = SimpleDocTemplate(response, pagesize=landscape(letter))
+    elements = []
+
+    # ✅ Correctly get the absolute path of the logo
+    logo_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'manda-logo.png')
+
+    # ✅ Add logo if the file exists
+    if os.path.exists(logo_path):
+        logo = Image(logo_path, width=120, height=60)  # Adjust width/height as needed
+        elements.append(logo)
+
+    # ✅ Add title "Customer List"
+    styles = getSampleStyleSheet()
+    title = Paragraph("<b>Customer List</b>", styles['Title'])
+    elements.append(title)
+    elements.append(Spacer(1, 12))  # Add spacing below title
+
+    # ✅ Define table header
+    data = [["ID", "Name", "Phone", "Address", "Date Created"]]
+    suppliers = SupplierData.objects.all().values_list("id", "sname", "sphone", "saddress", "datecl")
+
+    for supplier in suppliers:
+        data.append(list(supplier))
+
+    # ✅ Create table with styling
+    table = Table(data)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+
+    elements.append(table)
+    doc.build(elements)
+
+    return response
+
+
+
+
