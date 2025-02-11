@@ -111,11 +111,11 @@
                     <table>
                         <tr>
                             <td>
-                                <strong>Seller (Your Company)</strong><br />
-                                {{ p_settings.firma }}<br />
-                                {{ p_settings.faddress }}<br />
-                                {{ p_settings.cif }}<br />
-                                Phone: {{ p_settings.fphone }}
+                                <strong>Seller</strong><br />
+                                {{ owner.firma }}<br />
+                                {{ owner.faddress }}<br />
+                                {{ owner.cif }}<br />
+                                Phone: {{ owner.fphone }}
                             </td>
                             <td style="text-align: right;">
                                 <strong>Customer</strong><br />
@@ -171,6 +171,8 @@
 <p></p>
         <!-- Notes & Terms -->
         <div class="footer">
+            <h3>Total (Before IVA): €{{ invoiceTotal }}</h3>
+            <h3>Total (After  IVA): €{{ invoiceTotalAfterIVA }}</h3>
             <p><strong>Terms & Conditions:</strong> Payment is due within 7 days. Late payments may incur additional fees.</p>
             <p><strong>Thank You!</strong> We appreciate your business.</p>
 <img src="https://i.postimg.cc/3rDkPZcD/manda-logo.png" style="width: 80px" />

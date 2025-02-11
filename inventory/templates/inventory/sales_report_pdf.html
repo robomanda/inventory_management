@@ -58,7 +58,7 @@
                     <th>Invoice ID</th>
                     <th>Customer Name</th>
                     <th>Date</th>
-                    <th>Total Amount (€)</th>
+                    <th>Amount</th>
                 </tr>
             </thead>
             <tbody>
@@ -77,10 +77,16 @@
 
         <!-- ✅ Fix: Correct Grand Total Display -->
         <p class="total" style="text-align: right; margin-top: 10px; font-size: 18px;">
-            <strong>Grand Total: {{ grand_total|default:0 }} €</strong>
+            
+            
         </p>
 
         <div class="footer">
+            <h3>Invoice Total Before IVA {{ grand_total|default:0 }} €</h3>
+            <h3>Invoice Total After IVA {{ total_after_iva|default:0 }} €</h3>
+            <h3>Total IVA {{ total_iva|default:0 }} €</h3>
+
+
             <p>Generated on {{ current_date }}</p>
         </div>
     </div>

@@ -15,7 +15,7 @@ class InventoryItemForm(forms.ModelForm):
 	supply = forms.ModelChoiceField(queryset=SupplierData.objects.all(), initial=0)
 	class Meta:
 		model = InventoryItem
-		fields = ['imi','name', 'quantity', 'price', 'category', 'supply']
+		fields = ['imi','name', 'quantity', 'cost', 'category', 'supply']
 
 class CustomerDataForm(forms.ModelForm):
   	class Meta:
@@ -30,7 +30,7 @@ class SupplierDataForm(forms.ModelForm):
 class OwnerDataForm(forms.ModelForm):
   	class Meta:
   		model = OwnerData
-  		fields = ['firma', 'fphone', 'whtsapp', 'cif', 'domainn', 'faddress']
+  		fields = ['firma', 'fphone', 'whtsapp', 'cif', 'margin', 'iva', 'domainn', 'faddress']
 
 class InvoicedataForm(forms.ModelForm):
 	class Meta:

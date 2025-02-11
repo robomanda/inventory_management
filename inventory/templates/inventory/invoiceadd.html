@@ -173,11 +173,14 @@ document.addEventListener("DOMContentLoaded", function() {
                     </tr>
                 </tbody>
             </table>
-            <button type="button" class="btn btn-success" id="addRow">Add Item</button>
+            
         </div>
 
         <div class="text-end mt-3">
+            <h5>Subtotal: <span id="subtotal">0</span>&euro;</h5>
+            <h5>IVA (21%): <span id="ivaTotal">0</span>&euro;</h5>
             <h5>Total Invoice: <span id="grandTotal">0</span>&euro;</h5>
+            
             <button type="button" class="btn btn-primary" id="saveInvoice">Save Invoice</button>
         </div>
     </form>
@@ -190,7 +193,6 @@ document.addEventListener("DOMContentLoaded", function() {
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     const invoiceTable = document.querySelector("#invoiceTable tbody");
-    const addRowBtn = document.querySelector("#addRow");
     const saveInvoiceBtn = document.querySelector("#saveInvoice");
 
     addRowBtn.addEventListener("click", function() {
@@ -231,13 +233,19 @@ document.addEventListener("DOMContentLoaded", function() {
         document.querySelector("#grandTotal").innerText = total.toFixed(2);
     }
 
-    // **Real-Time Product Search via AJAX**
-    invoiceTable.addEventListener("input", function(event) {
-        if (event.target.classList.contains("imi")) {
-            let row = event.target.closest("tr");
-            let imiNumber = event.target.value.trim();
+    <script>
+// ✅ Real-Time Customer Search via AJAX
+document.addEventListener("DOMContentLoaded", function () {
+    const customerPhoneInput = document.querySelector(".phone");
 
-            if (imiNumber.length > 2) {  // Avoid unnecessary requests
+    if (customerPhoneInput) {
+        customerPhoneInput.addEventListener("input", function () {
+            let phoneNumber = this.value.trim();
+            let row = this.closest("tr");
+
+            if (phoneNumber.length > 2) {  
+                console.log("Searching for Customer Phone:", phoneNumber);  // Debugging
+
                 fetch("{% url 'invoiceadd' %}", {
                     method: "POST",
                     headers: {
@@ -245,80 +253,246 @@ document.addEventListener("DOMContentLoaded", function() {
                         "X-Requested-With": "XMLHttpRequest",
                         "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
                     },
-                    body: JSON.stringify({ imi: imiNumber })
+                    body: JSON.stringify({ cphone: phoneNumber })
                 })
                 .then(response => response.json())
                 .then(data => {
+                    console.log("Customer Search Response:", data);  // Debugging
+
                     if (data.name) {
                         row.querySelector(".name").value = data.name;
-                        row.querySelector(".price").value = data.price;
-                        row.querySelector(".quantity").value = 1;
-                        row.querySelector(".total").value = data.price;
-                        calculateTotal();
+                        row.querySelector(".nie").value = data.nie;
+                        row.querySelector(".address").value = data.address;
                     } else {
                         row.querySelector(".name").value = "";
-                        row.querySelector(".price").value = "";
-                        row.querySelector(".total").value = "";
+                        row.querySelector(".nie").value = "";
+                        row.querySelector(".address").value = "";
                     }
                 })
                 .catch(error => console.error("Error:", error));
             }
+        });
+    }
+});
+
+</script>
+
+<!-- JavaScript for AJAX -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const invoiceTable = document.querySelector("#invoiceTable tbody");
+
+    // Function to add a new row automatically
+    function addNewRow(imiNumber = "") {
+        let newRow = document.createElement("tr");
+        newRow.innerHTML = `
+            <td><input type="text" class="form-control imi" value="${imiNumber}" autofocus></td>
+            <td><input type="text" class="form-control name" readonly></td>
+            <td><input type="number" class="form-control price" readonly></td>
+            <td><input type="number" class="form-control quantity" value="1" min="1"></td>
+            <td><input type="text" class="form-control total" readonly></td>
+            <td><button type="button" class="btn btn-danger removeRow">X</button></td>
+        `;
+        invoiceTable.appendChild(newRow);
+        setupIMISearch();  // Ensure new row has an event listener
+    }
+
+    // ✅ Automatically add the first IMI row on page load
+    if (invoiceTable.children.length === 0) {
+        addNewRow(); // Ensures at least one row is always present
+    }
+
+    // ✅ Real-Time IMI Product Search
+    function setupIMISearch() {
+        document.querySelectorAll(".imi").forEach(input => {
+            input.removeEventListener("input", searchIMI); // Prevent duplicate event listeners
+            input.addEventListener("input", searchIMI);
+        });
+    }
+
+    function searchIMI() {
+        let row = this.closest("tr");
+        let imiNumber = this.value.trim();
+
+        if (imiNumber.length > 2) {  
+            console.log("Searching for IMI:", imiNumber);  // Debugging
+
+            fetch("{% url 'invoiceadd' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
+                },
+                body: JSON.stringify({ imi: imiNumber })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("IMI Search Response:", data);  // Debugging
+
+                if (data.name) {
+                    row.querySelector(".name").value = data.name;
+                    row.querySelector(".price").value = data.price;
+                    row.querySelector(".quantity").value = 1;
+                    row.querySelector(".total").value = parseFloat(data.price).toFixed(2);
+
+                    // ✅ Automatically add a new row and focus on it
+                    let newRow = addNewRow();
+                    newRow.querySelector(".imi").focus();
+                } else {
+                    row.querySelector(".name").value = "";
+                    row.querySelector(".price").value = "";
+                    row.querySelector(".total").value = "";
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+    }
+
+    setupIMISearch();  // ✅ Ensure IMI search works on page load
+});
+
+
+// Remove row when clicking delete
+    invoiceTable.addEventListener("click", function (event) {
+        if (event.target.classList.contains("removeRow")) {
+            event.target.closest("tr").remove();
+            calculateTotal();
         }
     });
 
+   // ✅ Function to calculate total invoice amount
+function calculateTotal() {
+    let grandTotal = 0;
+    document.querySelectorAll("#invoiceTable tbody tr").forEach(function (row) {
+        let price = parseFloat(row.querySelector(".price").value) || 0;
+        let quantity = parseInt(row.querySelector(".quantity").value) || 1;
+        let totalField = row.querySelector(".total");
+
+        let rowTotal = price * quantity;
+        totalField.value = rowTotal.toFixed(2);
+        grandTotal += rowTotal;
+    });
+
+    document.querySelector("#grandTotal").innerText = grandTotal.toFixed(2);
+}
+
+// ✅ Calculate total when quantity changes
+document.addEventListener("input", function (event) {
+    if (event.target.classList.contains("quantity")) {
+        calculateTotal();
+    }
+});
+
+// ✅ Update total when new IMI (barcode) is scanned
+document.addEventListener("input", function (event) {
+    if (event.target.classList.contains("imi")) {
+        let row = event.target.closest("tr");
+        let price = parseFloat(row.querySelector(".price").value) || 0;
+        let quantity = parseInt(row.querySelector(".quantity").value) || 1;
+        row.querySelector(".total").value = (price * quantity).toFixed(2);
+
+        calculateTotal(); // Update total immediately
+    }
+});
+
+function calculateTotal() {
+    let subtotal = 0;
+    let ivaRate = 0.21; // Adjust IVA percentage as needed (e.g., 21% = 0.21)
+    let grandTotal = 0;
+
+    document.querySelectorAll("#invoiceTable tbody tr").forEach(function (row) {
+        let price = parseFloat(row.querySelector(".price").value) || 0;
+        let quantity = parseInt(row.querySelector(".quantity").value) || 1;
+        let totalField = row.querySelector(".total");
+
+        let rowTotal = price * quantity;
+        totalField.value = rowTotal.toFixed(2);
+        subtotal += rowTotal;
+    });
+
+    let ivaAmount = subtotal * ivaRate;
+    grandTotal = subtotal + ivaAmount;
+
+    document.querySelector("#grandTotal").innerText = grandTotal.toFixed(2);
     
-     // **AJAX Invoice Save**
-    saveInvoiceBtn.addEventListener("click", function() {
-        let customer = document.querySelector(".phone").value;  // Get the customer phone
-        if (!customer) {
-            alert("Please select a customer by entering a phone number.");
-            return;  // Prevent submission if no customer is selected
-        }
+    // ✅ Show totals
+    document.querySelector("#subtotal").innerText = subtotal.toFixed(2);  // Total without IVA
+    document.querySelector("#ivaTotal").innerText = ivaAmount.toFixed(2);  // IVA amount
+}
 
+
+// **AJAX Invoice Save**
+
+document.addEventListener("DOMContentLoaded", function () {
+    const saveInvoiceBtn = document.querySelector("#saveInvoice");
+
+    saveInvoiceBtn.addEventListener("click", function () {
+        let customerPhone = document.querySelector(".phone").value.trim();
         let items = [];
-        document.querySelectorAll("#invoiceTable tbody tr").forEach(function(row) {
-            let imi = row.querySelector(".imi").value;
-            let name = row.querySelector(".name").value;
-            let price = row.querySelector(".price").value;
-            let quantity = row.querySelector(".quantity").value;
-            let total = row.querySelector(".total").value;
 
-            if (imi && quantity > 0 && name && price && total) {  // Ensure all fields are filled
-                items.push({ imi, name, price, quantity, total });
+        document.querySelectorAll("#invoiceTable tbody tr").forEach(row => {
+            let imi = row.querySelector(".imi").value.trim();
+            let name = row.querySelector(".name").value.trim();
+            let price = row.querySelector(".price").value.trim();
+            let quantity = row.querySelector(".quantity").value.trim();
+            let total = row.querySelector(".total").value.trim();
+
+            if (imi && name && price && quantity && total) {  // Ensure row is not empty
+                items.push({
+                    imi: imi,
+                    name: name,
+                    price: price,
+                    quantity: quantity,
+                    total: total
+                });
             }
         });
 
+        if (!customerPhone) {
+            alert("Please enter a customer phone number.");
+            return;
+        }
         if (items.length === 0) {
-            alert("Please add at least one invoice item.");
-            return;  // Prevent submission if no items are added
+            alert("Invoice must have at least one item.");
+            return;
         }
 
-        let data = { customer: customer, items: items };
+        let invoiceData = {
+            customer: customerPhone,
+            items: items
+        };
 
-   
         fetch("{% url 'save_invoice' %}", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "X-Requested-With": "XMLHttpRequest",
                 "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(invoiceData)
+        
         })
         .then(response => response.json())
         .then(data => {
-            if (data.message) {
-                alert(data.message);
-                location.reload();  // Reload to clear the form after saving
-                 // ✅ Automatically open PDF after saving
-                window.location.href = "/invoice/" + data.invoice_id + "/pdf/";
-            } else {
+            if (data.error) {
                 alert("Error: " + data.error);
+            } else {
+                alert("Invoice saved successfully!");
+
+                // ✅ Ensure invoice_id is present before opening PDF
+                if (data.invoice_id) {
+                    let pdfUrl = `/invoice/${data.invoice_id}/pdf/`;
+                    window.open(pdfUrl, "_blank");  // ✅ Open PDF in a new tab
+                } else {
+                    alert("Invoice saved, but PDF export failed!");
+                }
             }
         })
         .catch(error => console.error("Error:", error));
     });
 });
+
 </script>
+
 {% endblock content %}
 </html>

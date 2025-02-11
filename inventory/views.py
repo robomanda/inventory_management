@@ -1,4 +1,5 @@
 
+from decimal import Decimal, ROUND_HALF_UP
 from reportlab.lib import colors
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse
@@ -13,10 +14,12 @@ from django.contrib.auth import logout
 from django.contrib.auth.views import LogoutView
 from django.contrib.messages.views import SuccessMessageMixin
 from .forms import UserRegisterForm, InventoryItemForm, CustomerDataForm, SupplierDataForm, OwnerDataForm, InvoicedataForm
-from .models import InventoryItem, Category, CustomerData, SupplierData, OwnerData, CustInvoiceData, InvoiceDetail
+from .models import InventoryItem, Category, CustomerData, SupplierData, OwnerData, CustInvoiceData, InvoiceDetail, OwnerData
 from inventory_management.settings import LOW_QUANTITY
 from django.contrib import messages
 from datetime import datetime, timedelta
+from django.utils.dateformat import DateFormat
+from django.utils.dateparse import parse_date
 from django.utils import timezone
 from urllib.parse import unquote 
 from django.http import JsonResponse
@@ -25,9 +28,7 @@ import json
 import pdfkit
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from django.shortcuts import get_object_or_404
 from django.conf import settings
-from django.utils.dateparse import parse_date
 from django.db.models import Sum
 from django.db import transaction
 from reportlab.lib.pagesizes import letter, landscape
@@ -281,6 +282,8 @@ class DeleteItemInv(LoginRequiredMixin, DeleteView):
 	success_url = reverse_lazy('dashboard5')
 	context_object_name = 'invoices'
 
+
+
 @method_decorator(csrf_exempt, name="dispatch")  # Disable CSRF for AJAX (only in development)
 class InvoiceAd(LoginRequiredMixin, View):
     def get(self, request):
@@ -299,17 +302,16 @@ class InvoiceAd(LoginRequiredMixin, View):
                 messages.error(request, "No product record found.")
 
         return render(request, "inventory/invoiceadd.html", {
-                "customers": customers if customers else [],
-                "prods": prods if prods else []
+            "customers": customers if customers else [],
+            "prods": prods if prods else []
         })
-        # return render(request, "inventory/invoiceadd.html", {"customers": customers, "prods": prods})
 
     def post(self, request):
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":  # AJAX request
             try:
                 data = json.loads(request.body)
 
-                # Check if the request is for customer & product search 
+                # Product Search
                 if "imi" in data:
                     imi_number = data["imi"]
                     product = get_object_or_404(InventoryItem, imi=imi_number)
@@ -318,112 +320,135 @@ class InvoiceAd(LoginRequiredMixin, View):
                         "price": product.price
                     }, status=200)
 
+                # Customer Search
                 elif "cphone" in data:
                     customer_id = data["cphone"]
                     customer = get_object_or_404(CustomerData, cphone=customer_id)
                     return JsonResponse({
                         "name": customer.cname,
-                        "nie" : customer.cnie,
+                        "nie": customer.cnie,
                         "address": customer.caddress,
                     }, status=200)
 
-                    
                 return JsonResponse({"message": "Invoice saved successfully!"}, status=200)
-
-                return JsonResponse({"error": "Invalid data"}, status=400)
 
             except Exception as e:
                 return JsonResponse({"error": str(e)}, status=400)
 
-        return JsonResponse({"error": "Invalid request"}, status=400)		
+        return JsonResponse({"error": "Invalid request"}, status=400)
 
 
-@login_required  
+
+
+@login_required
+@csrf_exempt
 def save_invoice(request):
     if request.method == "POST":
         try:
-            # Load JSON data from the request body
             data = json.loads(request.body)
-            customer_phone = data.get('customer', '')
+            customer_phone = data.get('customer', '').strip()
             items = data.get('items', [])
 
-            # Step 1: Create the invoice (CustinvoiceData - Parent)
-            #customer = CustomerData.objects.get(cphone=customer_phone)  # Assuming customer exists
-        
+            if not customer_phone:
+                return JsonResponse({'error': 'Customer phone is required'}, status=400)
+
+            if not items:
+                return JsonResponse({'error': 'Invoice must have at least one item'}, status=400)
+
+            # Fetch the customer
             try:
                 customer = CustomerData.objects.get(cphone=customer_phone)
             except CustomerData.DoesNotExist:
                 return JsonResponse({'error': 'Customer not found'}, status=400)
 
-            #invoice = CustInvoiceData.objects.create(customer=customer)
-            
-            invoice = CustInvoiceData.objects.create(
-                customer=customer,
-                user=request.user,  # Assign logged-in user
-                address=customer.caddress,  # Storing customer address
-                nif=customer.cnie,  # Storing customer email
-                phone=customer.cphone  # Storing customer phone
-                
-                
-            )
+            # Fetch the owner's IVA setting
+            owner_data = OwnerData.objects.filter(user=request.user).first()
+            iva_percentage = Decimal(owner_data.iva if owner_data else 0.0)
 
+            # Calculate totals
+            total_before_iva = sum(Decimal(item['total']) for item in items if 'total' in item)
+            total_after_iva = round(total_before_iva * (Decimal(1) + iva_percentage / Decimal(100)), 2)
 
-            for item in items:
-                # Create the invoice detail (invoice_item)
-                invoice_item = InvoiceDetail.objects.create(
-                    invoice=invoice,
-                    imi=item['imi'],
-                    name=item['name'],
-                    price=item['price'],
-                    quantity=item['quantity'],
-                    total=item['total']
+            with transaction.atomic():
+                invoice = CustInvoiceData.objects.create(
+                    customer=customer,
+                    user=request.user,
+                    address=customer.caddress,
+                    nif=customer.cnie,
+                    phone=customer.cphone,
+                    total_before_iva=total_before_iva,
+                    total_after_iva=total_after_iva
                 )
 
-                # Now, call the reduce_inventory method on the invoice_item instance
-                invoice_item.reduce_inventory()  # Properly using the instance to call reduce_inventory()
+                for item in items:
+                    try:
+                        inventory_item = InventoryItem.objects.get(imi=item['imi'])
+                        quantity = int(item['quantity'])
 
-            # Return response with invoice ID for PDF generation
-            return JsonResponse({'message': 'Invoice saved successfully', 'invoice_id': invoice.id}, status=200)
+                        if inventory_item.quantity < quantity:
+                            raise ValueError(f"Not enough stock for {inventory_item.name}. Only {inventory_item.quantity} left.")
 
+                        InvoiceDetail.objects.create(
+                            invoice=invoice,
+                            imi=item['imi'],
+                            name=item['name'],
+                            price=Decimal(item['price']),
+                            quantity=quantity,
+                            total=Decimal(item['total'])
+                        )
+
+                        inventory_item.quantity -= quantity
+                        inventory_item.save()
+                    except InventoryItem.DoesNotExist:
+                        return JsonResponse({'error': f"Product with IMI {item['imi']} not found"}, status=400)
+                    except ValueError as e:
+                        return JsonResponse({'error': str(e)}, status=400)
+
+            return JsonResponse({
+                'message': 'Invoice saved successfully',
+                'invoice_id': invoice.id,
+                'total_before_iva': total_before_iva,
+                'total_after_iva': total_after_iva
+            }, status=200)
+
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON data'}, status=400)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
 
-    return render(request, 'invoiceadd.html')
+    return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
-@login_required
+
 def viewPDFInvoice(request, invoice_id):
-    # Ensure invoice exists
-    invoice = get_object_or_404(CustInvoiceData, id=invoice_id)
-    
-    # Fetch invoice items
+    invoice = CustInvoiceData.objects.get(id=invoice_id)
     products = InvoiceDetail.objects.filter(invoice=invoice)
+    owner = OwnerData.objects.first()  # Fetch company details for header
 
-    # Fetch company details (OwnerData)
-    p_settings = OwnerData.objects.first()
-
-    # Calculate Invoice Total
-    invoiceTotal = sum(item.total for item in products)
-
-    # Context for the template
     context = {
         "invoice": invoice,
         "products": products,
-        "p_settings": p_settings,
-        "invoiceTotal": invoiceTotal,
+        "owner": owner,
+        "invoiceTotal": invoice.total_before_iva,
+        "invoiceTotalAfterIVA": invoice.total_after_iva
     }
 
-    # ✅ Render the template to HTML
+    # Load the HTML template and render it
     template = get_template("invoice/invoice-template.html")
     html = template.render(context)
 
-    # ✅ Generate PDF using correct wkhtmltopdf path
-    pdf = pdfkit.from_string(html, False, configuration=settings.PDFKIT_CONFIG)
+    # Generate PDF using pdfkit
+    options = {
+        'page-size': 'A4',
+        'encoding': "UTF-8",
+        'enable-local-file-access': None
+    }
+    pdf = pdfkit.from_string(html, False, configuration=settings.PDFKIT_CONFIG, options=options)
 
-    # ✅ Return PDF as response
     response = HttpResponse(pdf, content_type="application/pdf")
     response["Content-Disposition"] = f'inline; filename="invoice_{invoice.id}.pdf"'
     return response
+
 
 def InvoiceDetailView(request, invoice_id):
     invoice = get_object_or_404(CustInvoiceData, id=invoice_id)  # Fetch the parent invoice
@@ -445,6 +470,8 @@ def sales_report(request):
     end_date_str = request.GET.get("end_date", "")
 
     sales = CustInvoiceData.objects.filter(user=request.user)
+    owner_data = OwnerData.objects.filter(user=request.user).first()
+    iva_percentage = Decimal(owner_data.iva if owner_data else 0.0)
 
     # Parse start_date and end_date
     start_date = parse_dates(start_date_str)
@@ -461,16 +488,16 @@ def sales_report(request):
 
     # ✅ Compute grand total (sum of all invoices)
     grand_total = sum(sale.total_amount for sale in sales if sale.total_amount)
+    total_after_iva = round(grand_total * (Decimal(1) + iva_percentage / Decimal(100)), 2)
 
     return render(request, "inventory/sales_report.html", {
         "sales": sales,
         "start_date": start_date,
         "end_date": end_date,
-        "grand_total": grand_total
+        "grand_total": grand_total,
+        "total_after_iva": total_after_iva
     })
 
-
-from django.utils.dateformat import DateFormat
 
 @login_required
 def export_sales_report_pdf(request):
@@ -478,6 +505,8 @@ def export_sales_report_pdf(request):
     end_date_str = request.GET.get("end_date", "")
 
     sales = CustInvoiceData.objects.filter(user=request.user)
+    owner_data = OwnerData.objects.filter(user=request.user).first()
+    iva_percentage = Decimal(owner_data.iva if owner_data and owner_data.iva is not None else 0.0)
 
     # Parse start_date and end_date
     start_date = parse_dates(start_date_str)
@@ -489,11 +518,22 @@ def export_sales_report_pdf(request):
         end_date = timezone.make_aware(end_date, timezone.get_current_timezone())
         sales = sales.filter(datein__range=[start_date, end_date])
 
-    # ✅ Compute total per invoice
+    # ✅ Compute total per invoice safely
     sales = sales.annotate(total_amount=Sum("items__total"))
 
-    # ✅ Compute grand total
-    grand_total = sum(sale.total_amount for sale in sales if sale.total_amount)
+    # ✅ Compute grand total safely
+    grand_total = sum((sale.total_amount or 0) for sale in sales)  # Ensure no None values
+
+    # ✅ Convert to Decimal for precision
+    grand_total = Decimal(grand_total).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+    # ✅ Compute total_after_iva
+    total_after_iva = grand_total * (Decimal(1) + iva_percentage / Decimal(100))
+    total_after_iva = total_after_iva.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+    # ✅ Compute total IVA
+    total_iva = total_after_iva - grand_total
+    total_iva = total_iva.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
     # Format start_date and end_date for display in the template
     formatted_start_date = DateFormat(start_date).format("b d, Y") if start_date else ""
@@ -507,6 +547,8 @@ def export_sales_report_pdf(request):
         "start_date": formatted_start_date,
         "end_date": formatted_end_date,
         "grand_total": grand_total,  # Ensure grand total is included
+        "total_after_iva": total_after_iva,
+        "total_iva": total_iva,  # Include total IVA
         "current_date": current_date  # Add current date for footer
     }
 
@@ -518,6 +560,7 @@ def export_sales_report_pdf(request):
     response = HttpResponse(pdf, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="sales_report_{formatted_start_date}_to_{formatted_end_date}.pdf"'
     return response
+
 
 
 
@@ -588,11 +631,11 @@ def export_products_pdf(request):
     elements.append(Spacer(1, 12))  # Add spacing below title
 
     # ✅ Define table header
-    data = [["IMI", "Name", "Quantity", "Price", "Supply", "Supplier phone", "Supply-date"]]
+    data = [["IMI", "Name", "Quantity", "cost", "Price", "Supply", "Supplier phone", "Supply-date"]]
     
     # Fetch products with supplier data
     products = InventoryItem.objects.all().select_related('supply').values_list(
-        "imi", "name", "quantity", "price", "supply__sname", "supply__sphone", "datecrea"
+        "imi", "name", "quantity", "cost", "price", "supply__sname", "supply__sphone", "datecrea"
     )
 
     for product in products:
