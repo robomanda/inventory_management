@@ -7,11 +7,15 @@
     <h4>Sales Report</h4>
 
     <form method="GET" class="d-flex justify-content-center gap-2 mb-3">
-        <label class="me-2">Start Date:</label>
-        <input type="date" name="start_date" value="{{ start_date }}" class="form-control w-auto">
-        <label class="ms-3 me-2">End Date:</label>
-        <input type="date" name="end_date" value="{{ end_date }}" class="form-control w-auto">
-        <button type="submit" class="btn btn-primary ms-3">Filter</button>
+        <label>Start Date:</label>
+    <input type="date" name="start_date" value="{{ start_date|date:'Y-m-d' }}" style="border-radius: 8px; border: 1px solid #ccc; padding: 5px;">
+    <!--<input type="date" name="start_date" value="{{ start_date|date:'Y-m-d' }}">-->
+    
+    <label>End Date:</label>
+    
+    <input type="date" name="end_date" value="{{ end_date|date:'Y-m-d' }}" style="border-radius: 8px; border: 1px solid #ccc; padding: 5px;" >
+    <button type="submit" class="btn btn-primary ms-3">Filter</button>
+            
     </form>
 
     <div class="table-responsive">
@@ -43,12 +47,14 @@
             </tbody>
         </table>
     </div>
+    
+    
+<!-- ✅ Correct Export Link -->
+<a href="{% url 'export_sales_report_pdf' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}" class="btn btn-danger ms-3" target="_blank">
+    Export
+</a>
+</form>
 
-    <form method="GET" action="{% url 'export_sales_report_pdf' %}">
-        <input type="hidden" name="start_date" value="{{ start_date }}">
-        <input type="hidden" name="end_date" value="{{ end_date }}">
-        <button type="submit" class="btn btn-danger">Export as PDF</button>
-    </form>
 </div>
 
 {% endblock %}

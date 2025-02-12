@@ -504,27 +504,25 @@ def export_sales_report_pdf(request):
     start_date_str = request.GET.get("start_date", "")
     end_date_str = request.GET.get("end_date", "")
 
-    sales = CustInvoiceData.objects.filter(user=request.user)
+    sales = CustInvoiceData.objects.filter(user=request.user).order_by("datein")  # ✅ Sort sales by date
     owner_data = OwnerData.objects.filter(user=request.user).first()
     iva_percentage = Decimal(owner_data.iva if owner_data and owner_data.iva is not None else 0.0)
 
     # Parse start_date and end_date
     start_date = parse_dates(start_date_str)
     end_date = parse_dates(end_date_str)
+    
 
     if start_date and end_date:
-        # Make the dates timezone-aware
         start_date = timezone.make_aware(start_date, timezone.get_current_timezone())
         end_date = timezone.make_aware(end_date, timezone.get_current_timezone())
         sales = sales.filter(datein__range=[start_date, end_date])
 
-    # ✅ Compute total per invoice safely
+    # ✅ Compute total per invoice
     sales = sales.annotate(total_amount=Sum("items__total"))
 
     # ✅ Compute grand total safely
-    grand_total = sum((sale.total_amount or 0) for sale in sales)  # Ensure no None values
-
-    # ✅ Convert to Decimal for precision
+    grand_total = sum((sale.total_amount or 0) for sale in sales)
     grand_total = Decimal(grand_total).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
     # ✅ Compute total_after_iva
@@ -535,21 +533,21 @@ def export_sales_report_pdf(request):
     total_iva = total_after_iva - grand_total
     total_iva = total_iva.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-    # Format start_date and end_date for display in the template
-    formatted_start_date = DateFormat(start_date).format("b d, Y") if start_date else ""
-    formatted_end_date = DateFormat(end_date).format("b d, Y") if end_date else ""
+    # ✅ Format dates correctly
+    formatted_start_date = DateFormat(start_date).format("b d, Y") if start_date else "N/A"
+    formatted_end_date = DateFormat(end_date).format("b d, Y") if end_date else "N/A"
 
-    # Get the current date for footer display
-    current_date = timezone.localtime(timezone.now()).strftime("%b d, Y")
+    # ✅ Get current date
+    current_date = timezone.localtime(timezone.now()).strftime("%b %d, %Y")
 
     context = {
-        "sales": sales,  # Pass the sales with total_amount calculated
+        "sales": sales,
         "start_date": formatted_start_date,
         "end_date": formatted_end_date,
-        "grand_total": grand_total,  # Ensure grand total is included
+        "grand_total": grand_total,
         "total_after_iva": total_after_iva,
-        "total_iva": total_iva,  # Include total IVA
-        "current_date": current_date  # Add current date for footer
+        "total_iva": total_iva,
+        "current_date": current_date,
     }
 
     # ✅ Generate PDF
@@ -560,6 +558,7 @@ def export_sales_report_pdf(request):
     response = HttpResponse(pdf, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="sales_report_{formatted_start_date}_to_{formatted_end_date}.pdf"'
     return response
+
 
 
 
