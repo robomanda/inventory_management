@@ -31,8 +31,9 @@
 				<a href="{% url 'customeradd' %}" class="btn btn-primary">+</a>
 			</div>
 <form method="get" action="{% url 'dashboard2' %}">
-		<input type="text" name="cphone" placeholder="Search by phone number" value="{{ request.GET.cphone }}">
-        <button type="submit">Search</button>
+		<input type="text" name="cphone" placeholder="Search by phone number" value="{{ request.GET.cphone }}" style="border-radius: 8px; border: 1px solid #ccc; padding: 5px;">
+
+        <button type="submit" class="btn btn-primary ms-3">Search</button>
 </form>
 
 			<table class="table table-hover table-striped">

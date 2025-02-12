@@ -52,30 +52,28 @@ def parse_dates(date_str):
 class Index(TemplateView):
 	template_name = 'inventory/index.html'
 
+
+LOW_QUANTITY = 2  # Adjust this as per your requirement
+
 class Dashboard(LoginRequiredMixin, View):
     def get(self, request):
-        items = InventoryItem.objects.filter(user=self.request.user.id).order_by('id')
-        query = request.GET.get("imi", "")
-        query = unquote(query).strip()
-        low_inventory = InventoryItem.objects.filter(
-            user=self.request.user.id,
-            quantity__lte=LOW_QUANTITY
-        )
+        items = InventoryItem.objects.filter(user=request.user).order_by('id')
+        query = request.GET.get("imi", "").strip()
 
-        if low_inventory.count() > 0:
-            if low_inventory.count() > 0:
-                messages.error(request, f'{low_inventory.count()} items sold')
-            else:
-                messages.error(request, f'{low_inventory.count()} item has low inventory')
         if query:
-            items = InventoryItem.objects.filter(imi__icontains=query)
-        else:
-            items = InventoryItem.objects.filter(user=self.request.user.id).order_by("id")
+            items = items.filter(imi__icontains=unquote(query))
 
-        low_inventory_ids = InventoryItem.objects.filter(
-            user=self.request.user.id,
-            quantity__lte=LOW_QUANTITY
-        ).values_list('id', flat=True)
+        sold_items_count = InventoryItem.objects.filter(user=request.user, quantity=0).count()
+        low_inventory_count = InventoryItem.objects.filter(user=request.user, quantity__lte=LOW_QUANTITY).exclude(quantity=0).count()
+
+        # Handling messages based on the inventory conditions
+        if sold_items_count > 0:
+            messages.error(request, f"{sold_items_count} item{'s' if sold_items_count > 1 else ''} sold")
+
+        if low_inventory_count > 0:
+            messages.error(request, f"{low_inventory_count} item{'s' if low_inventory_count > 1 else ''} has low inventory")
+
+        low_inventory_ids = InventoryItem.objects.filter(user=request.user, quantity__lte=LOW_QUANTITY).values_list('id', flat=True)
 
         return render(request, 'inventory/dashboard.html', {'items': items, 'low_inventory_ids': low_inventory_ids})
 
@@ -637,9 +635,16 @@ def export_products_pdf(request):
         "imi", "name", "quantity", "cost", "price", "supply__sname", "supply__sphone", "datecrea"
     )
 
+    total_cost = 0
+    total_price = 0
+
     for product in products:
         # Add data for each product, including supplier's name and phone
         data.append(list(product))
+        total_cost += product[3]  # Index 3 = cost
+        total_price += product[4]  # Index 4 = price
+    # ✅ Add total row at the bottom
+    data.append(["", "", "Grand Total:€", f"{total_cost:.2f}", f"{total_price:.2f}", "", "", ""])  # Format total price and cost
 
     # ✅ Create table with styling
     table = Table(data)

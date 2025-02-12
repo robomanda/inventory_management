@@ -31,8 +31,8 @@
 				<a href="{% url 'supplieradd' %}" class="btn btn-primary">+</a>
 			</div>
 <form method="get" action="{% url 'dashboard3' %}">
-		<input type="text" name="sphone" placeholder="Search by phone number" value="{{ request.GET.sphone }}">
-        <button type="submit">Search</button>
+		<input type="text" name="sphone" placeholder="Search by phone number" value="{{ request.GET.sphone }}" style="border-radius: 8px; border: 1px solid #ccc; padding: 5px;" >
+        <button type="submit" class="btn btn-primary ms-3">Search</button>
 </form>
 
 			<table class="table table-hover table-striped">

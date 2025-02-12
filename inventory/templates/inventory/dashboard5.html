@@ -10,8 +10,8 @@
 				<a href="{% url 'invoiceadd' %}" class="btn btn-primary">+</a>
 			</div>
 <form method="get" action="{% url 'dashboard5' %}">
-		<input type="text" name="phone" placeholder="Search by phone number" value="{{ request.GET.phone }}">
-        <button type="submit">Search</button>
+		<input type="text" name="phone" placeholder="Search by phone number" value="{{ request.GET.phone }}" style="border-radius: 8px; border: 1px solid #ccc; padding: 5px;" >
+        <button type="submit" class="btn btn-primary ms-3">Search</button>
 </form>
 
 			<table class="table table-hover table-striped">

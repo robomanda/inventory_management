@@ -32,8 +32,8 @@
 			</div>
 
 			<form method="get" action="{% url 'dashboard' %}">
-		<input type="text" name="imi" placeholder="Search by IMI" value="{{ request.GET.imi }}">
-        <button type="submit">Search</button>
+		<input type="text" name="imi" placeholder="Search by IMI" value="{{ request.GET.imi }}" style="border-radius: 8px; border: 1px solid #ccc; padding: 5px;">
+        <button type="submit" class="btn btn-primary ms-3">Search</button>
 </form>
 
 			<table class="table table-hover table-striped">
@@ -78,6 +78,7 @@
 					{% endfor %}
 				</tbody>
 			</table>
+			
 
  <form method="GET" action="{% url 'export_products_pdf' %}">
         
