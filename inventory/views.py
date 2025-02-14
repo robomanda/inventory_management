@@ -569,12 +569,13 @@ def export_customers_pdf(request):
     elements = []
 
     # ✅ Correctly get the absolute path of the logo
-    logo_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'manda-logo.png')
+    shop_logo_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'shoplogo1.png')
+    manda_logo_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'manda-logo.png')
 
     # ✅ Add logo if the file exists
-    if os.path.exists(logo_path):
-        logo = Image(logo_path, width=120, height=60)  # Adjust width/height as needed
-        elements.append(logo)
+    if os.path.exists(shop_logo_path):
+        shop_logo = Image(shop_logo_path, width=50, height=38)  # Adjust width/height as needed
+        elements.append(shop_logo)
 
     # ✅ Add title "Customer List"
     styles = getSampleStyleSheet()
@@ -601,10 +602,21 @@ def export_customers_pdf(request):
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ]))
 
+
     elements.append(table)
+    elements.append(Spacer(1, 20))
+
+# ✅ Add logo at the bottom (centered)
+    if os.path.exists(manda_logo_path):
+        manda_logo = Image(manda_logo_path, width=30, height=15)  # Adjust size as needed
+        elements.append(manda_logo)
+
+
     doc.build(elements)
 
     return response
+
+
 
 def export_products_pdf(request):
     response = HttpResponse(content_type='application/pdf')
@@ -612,24 +624,27 @@ def export_products_pdf(request):
 
     doc = SimpleDocTemplate(response, pagesize=landscape(letter))
     elements = []
-
+    
     # ✅ Correctly get the absolute path of the logo
-    logo_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'manda-logo.png')
+    shop_logo_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'shoplogo1.png')
+    manda_logo_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'manda-logo.png')
+    
 
-    # ✅ Add logo if the file exists
-    if os.path.exists(logo_path):
-        logo = Image(logo_path, width=120, height=60)  # Adjust width/height as needed
-        elements.append(logo)
+    # ✅ Add logo at the top and center it
+    styles = getSampleStyleSheet()
+    if os.path.exists(shop_logo_path):
+        shop_logo = Image(shop_logo_path, width=50, height=38)  # Adjust size as needed
+        elements.append(shop_logo)
+        elements.append(Spacer(1, 12))
 
     # ✅ Add title "Product List"
-    styles = getSampleStyleSheet()
     title = Paragraph("<b>Product List</b>", styles['Title'])
     elements.append(title)
-    elements.append(Spacer(1, 12))  # Add spacing below title
+    elements.append(Spacer(1, 12))
 
     # ✅ Define table header
-    data = [["IMI", "Name", "Quantity", "cost", "Price", "Supply", "Supplier phone", "Supply-date"]]
-    
+    data = [["IMI", "Name", "Quantity", "Cost", "Price", "Supply", "Supplier Phone", "Supply Date"]]
+
     # Fetch products with supplier data
     products = InventoryItem.objects.all().select_related('supply').values_list(
         "imi", "name", "quantity", "cost", "price", "supply__sname", "supply__sphone", "datecrea"
@@ -639,12 +654,19 @@ def export_products_pdf(request):
     total_price = 0
 
     for product in products:
-        # Add data for each product, including supplier's name and phone
         data.append(list(product))
         total_cost += product[3]  # Index 3 = cost
         total_price += product[4]  # Index 4 = price
+
     # ✅ Add total row at the bottom
-    data.append(["", "", "Grand Total:€", f"{total_cost:.2f}", f"{total_price:.2f}", "", "", ""])  # Format total price and cost
+    data.append(["", "", "Grand Total:€", f"{total_cost:.2f}", f"{total_price:.2f}", "", "", ""])
+
+    # ✅ Compute total profit
+    total_profit = Decimal(total_price) - Decimal(total_cost)
+    total_profit = total_profit.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+    # ✅ Append profit row
+    #data.append(["", "", "Total Profit:€", f"{total_profit:.2f}", "", "", "", ""])
 
     # ✅ Create table with styling
     table = Table(data)
@@ -655,13 +677,30 @@ def export_products_pdf(request):
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
         ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('FONTNAME', (3, -1), (4, -1), 'Helvetica-Bold'),
+        ('TEXTCOLOR', (3, -1), (4, -1), colors.blue)
     ]))
 
     elements.append(table)
-    doc.build(elements)
+    elements.append(Spacer(1, 12))
 
+    # ✅ Add profit summary text below the table
+    profit_summary = Paragraph(f"<b>Total difference: €{total_profit}</b>", styles['Title'])
+    elements.append(profit_summary)
+
+    elements.append(Spacer(1, 20))
+
+    
+    # ✅ Add logo at the bottom (centered)
+    if os.path.exists(manda_logo_path):
+        manda_logo = Image(manda_logo_path, width=30, height=15)  # Adjust size as needed
+        elements.append(manda_logo)
+
+    doc.build(elements)
+    
     return response
+
 
 def export_suppliers_pdf(request):
     response = HttpResponse(content_type='application/pdf')
@@ -671,12 +710,13 @@ def export_suppliers_pdf(request):
     elements = []
 
     # ✅ Correctly get the absolute path of the logo
-    logo_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'manda-logo.png')
+    shop_logo_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'shoplogo1.png')
+    manda_logo_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'manda-logo.png')
 
     # ✅ Add logo if the file exists
-    if os.path.exists(logo_path):
-        logo = Image(logo_path, width=120, height=60)  # Adjust width/height as needed
-        elements.append(logo)
+    if os.path.exists(shop_logo_path):
+        shop_logo = Image(shop_logo_path, width=50, height=38)  # Adjust width/height as needed
+        elements.append(shop_logo)
 
     # ✅ Add title "Customer List"
     styles = getSampleStyleSheet()
@@ -704,6 +744,13 @@ def export_suppliers_pdf(request):
     ]))
 
     elements.append(table)
+    elements.append(Spacer(1, 20))
+
+# ✅ Add logo at the bottom (centered)
+    if os.path.exists(manda_logo_path):
+        manda_logo = Image(manda_logo_path, width=30, height=15)  # Adjust size as needed
+        elements.append(manda_logo)
+
     doc.build(elements)
 
     return response
